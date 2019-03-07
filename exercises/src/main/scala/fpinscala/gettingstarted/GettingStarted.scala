@@ -153,6 +153,15 @@ object PolymorphicFunctions {
     }
     true
   }
+  def isSortedFP[A](as: Array[A], gt: (A,A) => Boolean): Boolean = {
+    def go(n: Int): Boolean =
+      if (n >= as.length - 1) true
+      else if (gt(as(n), as(n+1))) false
+      else go(n+1)
+
+    go(0)
+  }
+
 
   // Polymorphic functions are often so constrained by their type
   // that they only have one implementation! Here's an example:
