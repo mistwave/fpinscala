@@ -120,7 +120,7 @@ object Option {
     case h :: tail => map2(f(h), traverse(tail)(f))(_ :: _)
   }
 
-  def traverse[M, N](a: List[M])(f: M => Option[N]): Option[List[N]] =
+  def traverse1[M, N](a: List[M])(f: M => Option[N]): Option[List[N]] =
     a.foldRight[Option[List[N]]](Some(Nil)) ((a, b) => map2(f(a), b)(_ :: _))
 
   /*
