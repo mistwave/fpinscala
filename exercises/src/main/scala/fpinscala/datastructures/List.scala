@@ -69,12 +69,13 @@ object List { // `List` companion object. Contains functions for creating and wo
     case (Cons(_, xs), num) => drop(xs, num - 1)
   }
 
-  def dropWhile[A](l: List[A], f: A => Boolean): List[A] = l match {
-    case Nil => Nil
+  def dropWhile[A](l: List[A])(f: A => Boolean): List[A] = l match {
     case Cons(x, xs) =>
-      if (f(x)) Cons(x, dropWhile(xs, f))
-      else dropWhile(xs, f)
+      if (f(x)) dropWhile(xs)(f)
+      else l
+    case _ => l
   }
+
 
   def init[A](l: List[A]): List[A] = l match {
     case Nil => Nil
@@ -245,6 +246,10 @@ object LengthTest {
     println(List.filter(List(1,2,3))(_ % 2 == 0))
     println("filter test passed")
 
+
+    println(List.dropWhile(List(1,2,3,1))(_ < 3))
+    println(List.dropWhile(List(9,2,3,1))(_ < 3))
+    println("dropWhile test passed")
   }
 
 }
