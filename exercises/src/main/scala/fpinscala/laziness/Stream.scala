@@ -160,6 +160,7 @@ trait Stream[+A] {
       case (l, r) => l == r
     }
 
+  // TODO why drop? not pattern match?
   // 5.15
   def tails: Stream[Stream[A]] =
     unfold(this) {
