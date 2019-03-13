@@ -1,6 +1,7 @@
 package fpinscala.parallelism
 
 import java.util.concurrent._
+
 import language.implicitConversions
 
 object Par {
@@ -29,8 +30,28 @@ object Par {
       def call = a(es).get
     })
 
+  def lazyUnit[A](a : => A): Par[A] = fork(unit(a))
+  // 7.4
+  def asyncF[A, B](f: A => B): A => Par[B] =
+    a => lazyUnit(f(a))
+
   def map[A,B](pa: Par[A])(f: A => B): Par[B] = 
     map2(pa, unit(()))((a,_) => f(a))
+
+  // 7.5
+  def sequence[A](ps: List[Par[A]]): Par[List[A]] =
+    ps.foldRight(unit(List.empty[A]))((f, acc) => map2(f, acc)(_ :: _))
+
+  // 7.6
+  def parFilter[A](as: List[A])(f: A => Boolean): Par[List[A]] = as match {
+    case h :: t if f(h) => map2(unit(h), fork(parFilter(t)(f)))(_ :: _)
+    case _ => unit(Nil)
+  }
+  def parFilter1[A](as: List[A])(f: A => Boolean): Par[List[A]] =
+    as.foldRight(unit(List.empty[A]))((a, b) =>
+      if (f(a)) map2(unit(a), b)(_ :: _)
+      else b
+    )
 
   def sortPar(parList: Par[List[Int]]) = map(parList)(_.sorted)
 
@@ -44,6 +65,40 @@ object Par {
     es => 
       if (run(es)(cond).get) t(es) // Notice we are blocking on the result of `cond`.
       else f(es)
+
+  // 7.11
+  def choiceN[A](n: Par[Int])(choices: List[Par[A]]): Par[A] =
+    es => {
+      val k = run(es)(n).get
+      run(es)(choices(k))
+    }
+
+  // 7.12
+  def choiceMap[K, V](key: Par[K])(choices: Map[K, Par[V]]): Par[V] =
+    es => {
+      val k = run(es)(key).get
+      run(es)(choices(k))
+    }
+
+  // 7.13
+  def chooser[A, B](pa: Par[A])(choices: A => Par[B]): Par[B] =
+    es => {
+      val k = run(es)(pa).get
+      run(es)(choices(k))
+    }
+
+  // 7.14
+  def join[A](a: Par[Par[A]]): Par[A] =
+    es => {
+      val k = run(es)(a).get
+      run(es)(k)
+    }
+
+  def flapMap[A, B](pa: Par[A])(f: A => Par[B]): Par[B] =
+    join(map(pa)(f))
+
+  def map2[A, B, C](pa: Par[A], pb: Par[B])(f: (A, B) => C): Par[C] =
+    flapMap(pa)(a => flapMap(pb)(b => unit(f(a, b))))
 
   /* Gives us infix syntax for `Par`. */
   implicit def toParOps[A](p: Par[A]): ParOps[A] = new ParOps(p)
