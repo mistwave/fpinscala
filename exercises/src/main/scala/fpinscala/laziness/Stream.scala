@@ -30,6 +30,18 @@ trait Stream[+A] {
 
    */
 
+  def zip[B](sb: Stream[B]): Stream[(A, B)] =
+    zipWith(sb)((_, _))
+
+
+  def zipWith[B, C](sb: Stream[B])(f: (A, B) => C): Stream[C] =
+    unfold((this, sb)) {
+      case (Cons(h1, t1), Cons(h2, t2)) =>
+        Some(
+          f(h1(), h2()) -> (t1(),t2())
+        )
+      case _ => None
+    }
 
   @annotation.tailrec
   final def find(f: A => Boolean): Option[A] = this match {
